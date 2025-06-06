@@ -21,6 +21,7 @@ export function createToken(user: UserModelType) {
 
 // Verify JWT (middleware example)
 export function verifyToken(cookie: string | undefined): boolean {
+  console.log("is cookie present", cookie);
   try {
     if (!cookie) {
       return false; // no token, unauthorized

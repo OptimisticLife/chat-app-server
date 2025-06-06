@@ -103,3 +103,16 @@ export function closeWebSocketOnUserLogout(userId: string) {
     console.error(`No WebSocket connection found for user ${userId}`);
   }
 }
+
+let timerToBroadcastOnlineUsers = 10000 * 60; // 1 minute
+setTimeout(() => {
+  console.log("Active users...", Array.from(establishedUsers.keys()));
+  broadcastMessage(
+    JSON.stringify({
+      type: "presenceStatus",
+      userPresence: {
+        users: Array.from(establishedUsers.keys()),
+      },
+    } as websocketMessageType)
+  );
+}, timerToBroadcastOnlineUsers);

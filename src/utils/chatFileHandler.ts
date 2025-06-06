@@ -8,9 +8,7 @@ export async function readChatDataFromFile(
   userId: string
 ): Promise<Record<string, ChatMessageType[]>> {
   try {
-    console.log("Read chat Data for user:", userId);
     const data = await retrieveJsonFilesFromS3(`${userId}_chat`, true);
-    console.log("file size: ", Object.keys(data).length);
 
     if (!data || typeof data !== "object") {
       console.warn(
