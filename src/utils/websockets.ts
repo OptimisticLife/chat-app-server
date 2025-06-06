@@ -1,18 +1,20 @@
-import { WebSocketServer } from "ws";
 import type { WebSocket } from "ws";
 import type { ChatMessageType, websocketMessageType } from "../types/index.js";
-
-const WebSocketServerInstance = new WebSocketServer({
-  port: 3333,
-  clientTracking: true,
-});
+import { IncomingMessage } from "node:http";
 
 const establishedUsers = new Map<string, WebSocket>();
+const baseUrl =
+  process.env.NODE_ENV === "production"
+    ? "https://chat-app-ui-hpdx.onrender.com/"
+    : "http://localhost:5173";
 
-WebSocketServerInstance.on("connection", (ws, req) => {
+export function wsServerConnectionHandler(
+  req: IncomingMessage,
+  ws: WebSocket
+): string {
   const userId =
     req.url !== undefined
-      ? new URL(req.url, "http://localhost").searchParams.get("userId")
+      ? new URL(req.url, baseUrl).searchParams.get("userId")
       : undefined;
   if (userId) {
     establishedUsers.set(userId, ws);
@@ -27,42 +29,35 @@ WebSocketServerInstance.on("connection", (ws, req) => {
       } as websocketMessageType)
     );
   }
+  return userId ?? "";
+}
 
-  ws.on("message", (message: string) => {
-    const messageData = JSON.parse(message.toString()) as websocketMessageType;
-    const { type: messageType, chatMessage } = messageData;
+export function wsMessageHandler(message: string, userId: string) {
+  const messageData = JSON.parse(message.toString()) as websocketMessageType;
+  const { type: messageType, chatMessage } = messageData;
 
-    if (chatMessage !== undefined) {
-      if (messageType === "chat") {
-        if (chatMessage.toUserId && userId) {
-          handleMessageRouting(userId, chatMessage.toUserId, chatMessage.data);
-        }
+  if (chatMessage !== undefined) {
+    if (messageType === "chat") {
+      if (chatMessage.toUserId && userId) {
+        handleMessageRouting(userId, chatMessage.toUserId, chatMessage.data);
       }
     }
-  });
+  }
+}
 
-  ws.on("close", () => {
-    if (userId) {
-      establishedUsers.delete(userId);
-      broadcastMessage(
-        JSON.stringify({
-          type: "presenceStatus",
-          userPresence: {
-            users: Array.from(establishedUsers.keys()),
-          },
-        } as websocketMessageType)
-      );
-    }
-  });
-});
-
-WebSocketServerInstance.on("listening", () => {
-  console.log("WebSocket server is listening on port 3333");
-});
-
-WebSocketServerInstance.on("error", (error) => {
-  console.error(`WebSocket error: ${error.message}`);
-});
+export function wsCloseHandler(userId: string) {
+  if (userId) {
+    establishedUsers.delete(userId);
+    broadcastMessage(
+      JSON.stringify({
+        type: "presenceStatus",
+        userPresence: {
+          users: Array.from(establishedUsers.keys()),
+        },
+      } as websocketMessageType)
+    );
+  }
+}
 
 function broadcastMessage(message: string) {
   establishedUsers.forEach((socket) => {
