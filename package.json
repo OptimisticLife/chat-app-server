@@ -1,0 +1,26 @@
+{
+  "name": "chat-app-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon",
+    "prod": "node index.js"
+  },
+  "author": "aadhik",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.820.0",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "ts-node": "^10.9.2",
+    "ws": "^8.18.2"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.15.27",
+    "@types/ws": "^8.18.1",
+    "typescript": "^5.8.3"
+  }
+}
