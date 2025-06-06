@@ -3,7 +3,7 @@
     "module": "CommonJS",
     "target": "es2020",
     "baseUrl": "./src",
-    // "outDir": "./dist",
+    "outDir": "./dist",
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",

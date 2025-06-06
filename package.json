@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon",
-    "prod": "node index.js"
+    "start:prod": "tsc && node dist/server.js"
   },
   "author": "aadhik",
   "license": "ISC",
