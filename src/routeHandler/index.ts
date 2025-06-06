@@ -19,6 +19,7 @@ import {
 
 async function routeHandler(req: IncomingMessage, res: ServerResponse) {
   const origin = req.headers.origin;
+  console.log("Orgin request", origin);
   if (
     origin?.includes("localhost:5173") ||
     origin?.includes("https://chat-app-ui-hpdx.onrender.com/")
@@ -26,6 +27,7 @@ async function routeHandler(req: IncomingMessage, res: ServerResponse) {
     // Create a copy of headerConfig as plain object
     const headers = { ...headerConfig } as Record<string, string>;
     headers["Access-Control-Allow-Origin"] = origin;
+    console.log("Allowing access for origin", origin);
 
     // Set each header separately:
     for (const [key, value] of Object.entries(headers)) {
