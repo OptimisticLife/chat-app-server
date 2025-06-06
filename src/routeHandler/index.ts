@@ -21,7 +21,7 @@ async function routeHandler(req: IncomingMessage, res: ServerResponse) {
   const origin = req.headers.origin;
   if (
     origin?.includes("localhost:5173") ||
-    origin?.includes("chat-app-server-c4lt.onrender")
+    origin?.includes("https://chat-app-ui-hpdx.onrender.com/")
   ) {
     // Create a copy of headerConfig as plain object
     const headers = { ...headerConfig } as Record<string, string>;
