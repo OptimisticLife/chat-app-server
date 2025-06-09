@@ -144,7 +144,7 @@ async function routeHandler(req: IncomingMessage, res: ServerResponse) {
     }
   } else if (req.url === "/logout" && req.method === "POST") {
     closeWebSocketOnUserLogout(req.headers["x-user-id"] as string);
-    res.setHeader("Set-Cookie", "token=; Max-Age=0; Path=/; HttpOnly");
+    res.setHeader("Set-Cookie", "token=; Max-Age=0; Path=/; HttpOnly; Secure");
     return sendJsonResponse(res, 200, {
       message: "User logged out successfully",
     });
