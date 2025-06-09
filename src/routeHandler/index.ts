@@ -17,101 +17,107 @@ import {
   writeChatDataToFile,
 } from "../utils/chatFileHandler";
 
+const isProd = process.env.NODE_ENV === "production";
+
 async function routeHandler(req: IncomingMessage, res: ServerResponse) {
   const origin = req.headers.origin;
+
   if (
     origin?.includes("localhost:5173") ||
     origin?.includes("chat-app-ui-hpdx.onrender.com")
   ) {
-    // Create a copy of headerConfig as plain object
     const headers = { ...headerConfig } as Record<string, string>;
     headers["Access-Control-Allow-Origin"] = origin;
+    headers["Access-Control-Allow-Credentials"] = "true";
 
-    // Set each header separately:
     for (const [key, value] of Object.entries(headers)) {
       res.setHeader(key, value);
     }
   }
-  // Handle CORS preflight
+
   if (req.method === "OPTIONS") {
     res.writeHead(200, headerConfig);
     return res.end();
   }
+
   if (req.url === "/") {
-    sendJsonResponse(res, 200, { message: "Home: Chat-app 4647" });
-    return;
-  } else if (req.url === "/create-user" && req.method === "POST") {
+    return sendJsonResponse(res, 200, { message: "Home: Chat-app 4647" });
+  }
+
+  if (req.url === "/create-user" && req.method === "POST") {
     try {
-      const response: string = await bodyParser(req);
-      const userData: RegisterUserDataType = JSON.parse(response);
+      const body = await bodyParser(req);
+      const userData: RegisterUserDataType = JSON.parse(body);
       await addUser(userData);
-      sendJsonResponse(res, 201, { message: "User created successfully" });
-      return;
+      return sendJsonResponse(res, 201, {
+        message: "User created successfully",
+      });
     } catch (err) {
-      sendJsonResponse(res, 500, { error: "500: Internal Server Error" });
       console.error("Error in create-user route:", err);
-      return;
+      return sendJsonResponse(res, 500, {
+        error: "500: Internal Server Error",
+      });
     }
-  } else if (req.url === "/login" && req.method === "POST") {
+  }
+
+  if (req.url === "/login" && req.method === "POST") {
     try {
-      const response: string = await bodyParser(req);
-      const loginData: LoginUserDataType = JSON.parse(response);
-      const existingUser: UserModelType | null = await checkUser(
-        loginData.email,
-        loginData.password
-      );
+      const body = await bodyParser(req);
+      const loginData: LoginUserDataType = JSON.parse(body);
+      const existingUser = await checkUser(loginData.email, loginData.password);
+
       if (existingUser) {
-        // New JWT token generation
         const token = createToken(existingUser);
-        const tokenCookie = `token=${token}; SameSite=None; Path=/; Secure; HttpOnly`;
+        const tokenCookie = `token=${token}; HttpOnly; Path=/; ${
+          isProd ? "Secure; SameSite=None;" : "SameSite=Lax;"
+        }`;
 
         res.setHeader("Set-Cookie", tokenCookie);
-        sendJsonResponse(res, 201, {
-          message: "User Loggedin successfully",
+        return sendJsonResponse(res, 201, {
+          message: "User Logged in successfully",
           data: { id: existingUser.id, name: existingUser.name },
         });
-        return;
       } else {
-        sendJsonResponse(res, 401, { error: "401: Unauthorized" });
-        return;
+        return sendJsonResponse(res, 401, { error: "401: Unauthorized" });
       }
     } catch (err) {
-      sendJsonResponse(res, 500, { error: "500: Internal Server Error" });
-      console.error("Error in create-user route:", err);
-      return;
+      console.error("Error in login route:", err);
+      return sendJsonResponse(res, 500, {
+        error: "500: Internal Server Error",
+      });
     }
-  } else if (req.url === "/get-users" && req.method === "GET") {
-    console.log("Route /get-users ...");
-    try {
-      const securedUsers = await getSecuredUsers();
+  }
 
-      if (securedUsers) {
-        sendJsonResponse(res, 201, {
-          message: "Users fetched..",
-          data: securedUsers,
-        });
-        return;
-      } else {
-        sendJsonResponse(res, 500, { error: "500: Internal server Error" });
-        return;
-      }
+  if (req.url === "/get-users" && req.method === "GET") {
+    try {
+      const users = await getSecuredUsers();
+      return sendJsonResponse(res, 200, {
+        message: "Users fetched successfully",
+        data: users,
+      });
     } catch (err) {
-      sendJsonResponse(res, 500, { error: "500: Internal Server Error" });
-      console.error("Error in create-user route:", err);
-      return;
+      console.error("Error in get-users route:", err);
+      return sendJsonResponse(res, 500, {
+        error: "500: Internal Server Error",
+      });
     }
-  } else if (req.url === "/check-session" && req.method === "GET") {
+  }
+
+  if (req.url === "/check-session" && req.method === "GET") {
     const isAuth = verifyToken(req.headers.cookie);
     if (isAuth) {
       return sendJsonResponse(res, 200, { message: "User is authenticated" });
     } else {
       return sendJsonResponse(res, 401, { error: "401: Unauthorized" });
     }
-  } else if (req.url === "/get-chat" && req.method === "GET") {
+  }
+
+  if (req.url === "/get-chat" && req.method === "GET") {
     const userId = req.headers["x-user-id"] as string;
     if (!userId) {
       return sendJsonResponse(res, 400, { error: "400: Bad Request" });
     }
+
     try {
       const chatData = await readChatDataFromFile(userId);
       return sendJsonResponse(res, 200, { data: chatData });
@@ -121,15 +127,18 @@ async function routeHandler(req: IncomingMessage, res: ServerResponse) {
         error: "500: Internal Server Error",
       });
     }
-  } else if (req.url === "/update-chat" && req.method === "POST") {
+  }
+
+  if (req.url === "/update-chat" && req.method === "POST") {
     const userId = req.headers["x-user-id"] as string;
     if (!userId) {
       return sendJsonResponse(res, 400, { error: "400: Bad Request" });
     }
+
     try {
-      const bodyString: string = await bodyParser(req);
-      if (bodyString) {
-        writeChatDataToFile(userId, JSON.parse(bodyString));
+      const body = await bodyParser(req);
+      if (body) {
+        await writeChatDataToFile(userId, JSON.parse(body));
         return sendJsonResponse(res, 200, {
           message: "Chat data updated successfully",
         });
@@ -142,13 +151,20 @@ async function routeHandler(req: IncomingMessage, res: ServerResponse) {
         error: "500: Internal Server Error",
       });
     }
-  } else if (req.url === "/logout" && req.method === "POST") {
+  }
+
+  if (req.url === "/logout" && req.method === "POST") {
     closeWebSocketOnUserLogout(req.headers["x-user-id"] as string);
-    res.setHeader("Set-Cookie", "token=; Max-Age=0; Path=/; HttpOnly; Secure");
+    const clearCookie = `token=; Max-Age=0; HttpOnly; Path=/; ${
+      isProd ? "Secure; SameSite=None;" : "SameSite=Lax;"
+    }`;
+    res.setHeader("Set-Cookie", clearCookie);
     return sendJsonResponse(res, 200, {
       message: "User logged out successfully",
     });
-  } else sendJsonResponse(res, 404, { error: "404: Page not found" });
+  }
+
+  return sendJsonResponse(res, 404, { error: "404: Page not found" });
 }
 
 module.exports = routeHandler;
