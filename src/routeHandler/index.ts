@@ -5,11 +5,7 @@ import {
   checkUser,
   getSecuredUsers,
 } from "../routeHandler/userHandler";
-import {
-  RegisterUserDataType,
-  LoginUserDataType,
-  UserModelType,
-} from "../types";
+import { RegisterUserDataType, LoginUserDataType } from "../types";
 import { createToken, verifyToken } from "../utils/jwtHandlers";
 import { closeWebSocketOnUserLogout } from "../utils/websockets";
 import {
