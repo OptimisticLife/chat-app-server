@@ -55,14 +55,14 @@ export async function getUser(id: string): Promise<UserModelType> {
 
 export async function addUser(
   userData: Omit<UserModelType, "id">
-): Promise<SecuredUserModelType> {
+): Promise<SecuredUserModelType | { statusCode: number; msg: string }> {
   try {
     const users = (await retrieveJsonFilesFromS3("users")) as UserModelType[];
     const existingUser = users.find(
       (u) => u.email === userData.email || u.name === userData.name
     );
     if (existingUser) {
-      throw new Error("User already exists");
+      return Promise.reject({ statusCode: 409, msg: "User already exists" });
     }
 
     const userId = "USER_" + Math.random().toString(36).substring(2);

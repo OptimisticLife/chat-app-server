@@ -50,9 +50,16 @@ async function routeHandler(req: IncomingMessage, res: ServerResponse) {
       });
     } catch (err) {
       console.error("Error in create-user route:", err);
-      return sendJsonResponse(res, 500, {
-        error: "500: Internal Server Error",
-      });
+
+      if ((err as any)?.statusCode && (err as any)?.statusCode === 409) {
+        return sendJsonResponse(res, 409, {
+          error: "User Already Exist",
+        });
+      } else {
+        return sendJsonResponse(res, 500, {
+          error: "500: Internal Server Error",
+        });
+      }
     }
   }
 
